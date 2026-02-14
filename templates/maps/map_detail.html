@@ -1,0 +1,891 @@
+<!-- templates/maps/map_detail.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактор карты: {{ map.name }}</title>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            background: #121212;
+            font-family: Arial, sans-serif;
+            color: #e0e0e0;
+        }
+        
+        #container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #sidebar {
+            width: 250px;
+            background: #1a1a1a;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 1px solid #333;
+        }
+        
+        #map-area {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #121212;
+        }
+        
+        #canvas-container {
+            position: relative;
+            border: 3px solid #0a58ca;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(10, 88, 202, 0.2);
+        }
+        
+        #map-canvas {
+            background: white;
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #drawing-canvas {
+            display: block;
+            cursor: crosshair;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #temp-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        
+        .tool-btn {
+            display: block;
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            background: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #444;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        .tool-btn:hover {
+            background: #3a3a3a;
+            border-color: #555;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .tool-btn.active {
+            background: linear-gradient(135deg, #0a58ca 0%, #3d8bfd 100%);
+            border-color: #0a58ca;
+            color: white;
+            box-shadow: 0 0 15px rgba(10, 88, 202, 0.3);
+        }
+        
+        .tool-btn .key {
+            float: right;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .color-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin: 6px;
+            border: 2px solid #444;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .color-btn:hover {
+            transform: scale(1.15);
+            border-color: #666;
+        }
+        
+        .color-btn.active {
+            border-color: #e0e0e0;
+            box-shadow: 0 0 12px rgba(224, 224, 224, 0.5);
+            transform: scale(1.15);
+        }
+        
+        .section-title {
+            color: #e0e0e0;
+            font-size: 1.1rem;
+            margin: 20px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #333;
+            font-weight: 600;
+        }
+        
+        .size-control {
+            margin-top: 20px;
+        }
+        
+        .size-label {
+            color: #aaa;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .size-slider {
+            width: 100%;
+            margin: 10px 0;
+            -webkit-appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: #444;
+            outline: none;
+        }
+        
+        .size-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #0a58ca;
+            cursor: pointer;
+            border: 2px solid #e0e0e0;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        
+        .size-value {
+            color: #e0e0e0;
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+        
+        #eraser-preview {
+            position: absolute;
+            border: 2px solid #e74c3c;
+            border-radius: 50%;
+            background: rgba(231, 76, 60, 0.2);
+            pointer-events: none;
+            display: none;
+            z-index: 1000;
+            box-sizing: border-box;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.3);
+        }
+        
+        #status {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            z-index: 1000;
+            transition: opacity 0.3s;
+            border: 1px solid #333;
+            backdrop-filter: blur(10px);
+        }
+        
+        .key {
+            display: inline-block;
+            padding: 3px 8px;
+            background: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            margin: 0 2px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #aaa;
+        }
+        
+        #shape-info {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(10, 88, 202, 0.1);
+            border-radius: 8px;
+            font-size: 12px;
+            border-left: 3px solid #0a58ca;
+            color: #a0c8ff;
+            line-height: 1.4;
+        }
+        
+        .colors-container {
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        
+        .action-btn {
+            background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+            border: none;
+            color: white;
+        }
+        
+        .action-btn:hover {
+            background: linear-gradient(135deg, #157347 0%, #1baa7e 100%);
+        }
+        
+        .secondary-btn {
+            background: #333;
+            border: 1px solid #444;
+        }
+        
+        .secondary-btn:hover {
+            background: #3a3a3a;
+            border-color: #555;
+        }
+        
+        #clear-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #e35d6a 100%);
+            border: none;
+            color: white;
+        }
+        
+        #clear-btn:hover {
+            background: linear-gradient(135deg, #c82333 0%, #d9534f 100%);
+        }
+        
+        h3 {
+            color: #e0e0e0;
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tool-icon {
+            font-size: 1.2em;
+            width: 24px;
+            display: inline-block;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="sidebar">
+            <h3>🛠️ Инструменты</h3>
+            <button class="tool-btn active" data-tool="pencil">
+                <span class="tool-icon">✏️</span> Карандаш <span class="key">B</span>
+            </button>
+            <button class="tool-btn" data-tool="eraser">
+                <span class="tool-icon">🧹</span> Ластик <span class="key">E</span>
+            </button>
+            <button class="tool-btn" data-tool="line">
+                <span class="tool-icon">📏</span> Линия <span class="key">L</span>
+            </button>
+            <button class="tool-btn" data-tool="rectangle">
+                <span class="tool-icon">⬜</span> Квадрат <span class="key">R</span>
+            </button>
+            <button class="tool-btn" data-tool="circle">
+                <span class="tool-icon">🔵</span> Круг <span class="key">C</span>
+            </button>
+            
+            <div class="section-title">📏 Размер кисти</div>
+            <div class="size-control">
+                <div class="size-label">Толщина: <span class="size-value" id="brush-size">5</span>px</div>
+                <input type="range" class="size-slider" id="brush-slider" min="1" max="50" value="5">
+            </div>
+            
+            <div class="section-title">🎨 Цвета</div>
+            <div class="colors-container">
+                <button class="color-btn active" style="background: #ff0000" data-color="#ff0000" title="Красный"></button>
+                <button class="color-btn" style="background: #00ff00" data-color="#00ff00" title="Зеленый"></button>
+                <button class="color-btn" style="background: #0000ff" data-color="#0000ff" title="Синий"></button>
+                <button class="color-btn" style="background: #ffff00" data-color="#ffff00" title="Желтый"></button>
+                <button class="color-btn" style="background: #ff00ff" data-color="#ff00ff" title="Фиолетовый"></button>
+                <button class="color-btn" style="background: #000000" data-color="#000000" title="Черный"></button>
+                <button class="color-btn" style="background: #ffffff" data-color="#ffffff" title="Белый"></button>
+            </div>
+            
+            <div id="shape-info" style="display: none;">
+                <strong>📐 Рисование фигур:</strong><br>
+                • Нажмите ЛКМ для начала<br>
+                • Перетащите для изменения размера<br>
+                • Отпустите ЛКМ для завершения
+            </div>
+            
+            <div class="section-title">⚙️ Управление</div>
+            <button class="tool-btn secondary-btn" id="undo-btn">
+                <span class="tool-icon">↩</span> Отменить <span class="key">Ctrl+Z</span>
+            </button>
+            <button class="tool-btn secondary-btn" id="redo-btn">
+                <span class="tool-icon">↪</span> Вернуть <span class="key">Ctrl+Y</span>
+            </button>
+            <button class="tool-btn" id="clear-btn">
+                <span class="tool-icon">🧹</span> Очистить рисунок
+            </button>
+            <button class="tool-btn action-btn" id="save-btn">
+                <span class="tool-icon">💾</span> Сохранить <span class="key">Ctrl+S</span>
+            </button>
+        </div>
+        
+        <div id="map-area">
+            <div id="canvas-container">
+                <canvas id="map-canvas"></canvas>
+                <canvas id="drawing-canvas"></canvas>
+                <canvas id="temp-canvas"></canvas>
+                <div id="eraser-preview"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="status">Готов</div>
+
+    <script>
+        // === КОНФИГУРАЦИЯ ===
+        const MAP_CONFIG = {
+            id: {{ map.id }},
+            name: "{{ map.name|escapejs }}",
+            imageUrl: "{{ map.image.url }}"
+        };
+        
+        // === ОСНОВНОЙ КЛАСС РЕДАКТОРА ===
+        class SimpleMapEditor {
+            constructor(config) {
+                this.config = config;
+                
+                this.mapCanvas = document.getElementById('map-canvas');
+                this.drawingCanvas = document.getElementById('drawing-canvas');
+                this.tempCanvas = document.getElementById('temp-canvas');
+                
+                this.mapCtx = this.mapCanvas.getContext('2d');
+                this.drawingCtx = this.drawingCanvas.getContext('2d');
+                this.tempCtx = this.tempCanvas.getContext('2d');
+                
+                this.currentColor = '#ff0000';
+                this.currentTool = 'pencil';
+                this.isDrawing = false;
+                this.isDrawingShape = false;
+                this.lastX = 0;
+                this.lastY = 0;
+                this.startX = 0;
+                this.startY = 0;
+                this.image = null;
+                this.imageWidth = 0;
+                this.imageHeight = 0;
+                this.brushSize = 5;
+                
+                // Для фигур
+                this.shapeStartX = 0;
+                this.shapeStartY = 0;
+                this.tempShape = null;
+                
+                // История для Ctrl+Z
+                this.history = [];
+                this.historyIndex = -1;
+                this.MAX_HISTORY = 50;
+                
+                this.init();
+            }
+            
+            async init() {
+                console.log('🚀 Инициализация редактора...');
+                
+                await this.loadMapImage();
+                this.setCanvasSize(); // Теперь после загрузки картинки
+                this.drawMap();
+                
+                // Сохраняем начальное пустое состояние
+                this.saveState();
+                
+                this.setupTools();
+                this.setupBrushSize();
+                this.setupKeyboardShortcuts();
+                
+                console.log('✅ Редактор готов!');
+                console.log(`📏 Размер карты: ${this.imageWidth}×${this.imageHeight}px`);
+            }
+            
+            setCanvasSize() {
+                const container = document.getElementById('canvas-container');
+                const maxSize = Math.min(800, window.innerHeight * 0.8);
+                
+                // Если картинка загружена, используем её пропорции
+                if (this.imageWidth > 0 && this.imageHeight > 0) {
+                    const aspectRatio = this.imageWidth / this.imageHeight;
+                    let width, height;
+                    
+                    if (aspectRatio > 1) {
+                        // Ширина больше высоты
+                        width = maxSize;
+                        height = maxSize / aspectRatio;
+                    } else {
+                        // Высота больше ширины
+                        height = maxSize;
+                        width = maxSize * aspectRatio;
+                    }
+                    
+                    container.style.width = width + 'px';
+                    container.style.height = height + 'px';
+                    
+                    [this.mapCanvas, this.drawingCanvas, this.tempCanvas].forEach(canvas => {
+                        canvas.width = width;
+                        canvas.height = height;
+                    });
+                } else {
+                    // Если картинка не загружена, используем квадрат
+                    container.style.width = maxSize + 'px';
+                    container.style.height = maxSize + 'px';
+                    
+                    [this.mapCanvas, this.drawingCanvas, this.tempCanvas].forEach(canvas => {
+                        canvas.width = maxSize;
+                        canvas.height = maxSize;
+                    });
+                }
+                
+                this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
+                this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
+            }
+            
+            async loadMapImage() {
+                return new Promise((resolve) => {
+                    this.image = new Image();
+                    this.image.crossOrigin = 'anonymous';
+                    
+                    const loadImage = (url) => {
+                        this.image.onload = () => {
+                            // Получаем реальные размеры картинки
+                            this.imageWidth = this.image.naturalWidth;
+                            this.imageHeight = this.image.naturalHeight;
+                            console.log(`✅ Карта загружена: ${this.imageWidth}×${this.imageHeight}px`);
+                            resolve();
+                        };
+                        
+                        this.image.onerror = () => {
+                            const nextUrl = url.startsWith('/media') ? 
+                                'http://localhost:8000' + url : 
+                                '/media' + url;
+                            loadImage(nextUrl);
+                        };
+                        
+                        this.image.src = url;
+                    };
+                    
+                    loadImage(this.config.imageUrl);
+                });
+            }
+            
+            drawMap() {
+                if (!this.image || !this.image.complete) return;
+                
+                const canvasWidth = this.mapCanvas.width;
+                const canvasHeight = this.mapCanvas.height;
+                
+                // Очищаем canvas
+                this.mapCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+                
+                // Рисуем картинку с сохранением пропорций
+                this.mapCtx.drawImage(this.image, 0, 0, canvasWidth, canvasHeight);
+            }
+            
+            // === СИСТЕМА ИСТОРИИ (CTRL+Z) ===
+            saveState() {
+                const snapshot = this.drawingCanvas.toDataURL('image/png');
+                this.history = this.history.slice(0, this.historyIndex + 1);
+                this.history.push(snapshot);
+                this.historyIndex++;
+                
+                if (this.history.length > this.MAX_HISTORY) {
+                    this.history.shift();
+                    this.historyIndex--;
+                }
+                
+                this.updateUndoRedoButtons();
+            }
+            
+            undo() {
+                if (this.historyIndex > 0) {
+                    this.historyIndex--;
+                    this.restoreState();
+                    this.updateStatus(`Отменено`);
+                } else {
+                    this.updateStatus('Нечего отменять');
+                }
+            }
+            
+            redo() {
+                if (this.historyIndex < this.history.length - 1) {
+                    this.historyIndex++;
+                    this.restoreState();
+                    this.updateStatus(`Восстановлено`);
+                } else {
+                    this.updateStatus('Нечего восстанавливать');
+                }
+            }
+            
+            restoreState() {
+                const img = new Image();
+                img.onload = () => {
+                    this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
+                    this.drawingCtx.drawImage(img, 0, 0);
+                    this.updateUndoRedoButtons();
+                };
+                img.src = this.history[this.historyIndex];
+            }
+            
+            updateUndoRedoButtons() {
+                const undoBtn = document.getElementById('undo-btn');
+                const redoBtn = document.getElementById('redo-btn');
+                
+                undoBtn.disabled = this.historyIndex <= 0;
+                redoBtn.disabled = this.historyIndex >= this.history.length - 1;
+                
+                undoBtn.style.opacity = undoBtn.disabled ? '0.5' : '1';
+                redoBtn.style.opacity = redoBtn.disabled ? '0.5' : '1';
+            }
+            
+            // === ГОРЯЧИЕ КЛАВИШИ ===
+            setupKeyboardShortcuts() {
+                const handleKeyDown = (e) => {
+                    // Ctrl+Z - отмена
+                    if (e.ctrlKey && e.key === 'z') {
+                        e.preventDefault();
+                        this.undo();
+                        return false;
+                    }
+                    
+                    // Ctrl+Y или Ctrl+Shift+Z - вернуть
+                    if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+                        e.preventDefault();
+                        this.redo();
+                        return false;
+                    }
+                    
+                    // Ctrl+S - сохранить
+                    if (e.ctrlKey && e.key === 's') {
+                        e.preventDefault();
+                        this.saveDrawing();
+                        return false;
+                    }
+                    
+                    // Быстрые клавиши инструментов
+                    if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                        const toolMap = {
+                            'b': 'pencil',
+                            'e': 'eraser',
+                            'l': 'line',
+                            'r': 'rectangle',
+                            'c': 'circle'
+                        };
+                        
+                        const tool = toolMap[e.key.toLowerCase()];
+                        if (tool) {
+                            e.preventDefault();
+                            this.selectToolByKey(tool);
+                        }
+                    }
+                };
+                
+                document.addEventListener('keydown', handleKeyDown);
+            }
+            
+            selectToolByKey(tool) {
+                const toolBtn = document.querySelector(`[data-tool="${tool}"]`);
+                if (toolBtn) {
+                    toolBtn.click();
+                }
+            }
+            
+            setupBrushSize() {
+                const slider = document.getElementById('brush-slider');
+                const display = document.getElementById('brush-size');
+                
+                slider.addEventListener('input', (e) => {
+                    this.brushSize = parseInt(e.target.value);
+                    display.textContent = this.brushSize;
+                    this.updateEraserPreview();
+                });
+            }
+            
+            updateStatus(message, duration = 2000) {
+                const status = document.getElementById('status');
+                status.textContent = message;
+                status.style.opacity = '1';
+                
+                setTimeout(() => {
+                    status.style.opacity = '0.5';
+                }, duration);
+            }
+            
+            setupTools() {
+                // Обработчики мыши для drawingCanvas
+                this.drawingCanvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+                this.drawingCanvas.addEventListener('mousemove', (e) => this.draw(e));
+                this.drawingCanvas.addEventListener('mouseup', () => this.stopDrawing());
+                this.drawingCanvas.addEventListener('mouseout', () => this.stopDrawing());
+                
+                // Превью ластика
+                this.drawingCanvas.addEventListener('mousemove', (e) => this.showEraserPreview(e));
+                this.drawingCanvas.addEventListener('mouseleave', () => this.hideEraserPreview());
+                
+                // Кнопки инструментов
+                document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.tool-btn[data-tool]').forEach(b => 
+                            b.classList.remove('active')
+                        );
+                        e.target.classList.add('active');
+                        this.currentTool = e.target.dataset.tool;
+                        
+                        // Показываем/скрываем подсказку для фигур
+                        const shapeInfo = document.getElementById('shape-info');
+                        if (['line', 'rectangle', 'circle'].includes(this.currentTool)) {
+                            shapeInfo.style.display = 'block';
+                        } else {
+                            shapeInfo.style.display = 'none';
+                        }
+                        
+                        // Превью ластика
+                        const preview = document.getElementById('eraser-preview');
+                        if (this.currentTool === 'eraser') {
+                            preview.style.display = 'block';
+                            this.updateEraserPreview();
+                        } else {
+                            preview.style.display = 'none';
+                        }
+                    });
+                });
+                
+                // Кнопки цветов
+                document.querySelectorAll('.color-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.color-btn').forEach(b => 
+                            b.classList.remove('active')
+                        );
+                        e.target.classList.add('active');
+                        this.currentColor = e.target.dataset.color;
+                    });
+                });
+                
+                // Кнопка очистки
+                document.getElementById('clear-btn').addEventListener('click', () => {
+                    if (confirm('Очистить все рисунки? Карта останется нетронутой.')) {
+                        this.drawingCtx.clearRect(0, 0, this.drawingCanvas.width, this.drawingCanvas.height);
+                        this.saveState();
+                        this.updateStatus('Все рисунки очищены');
+                    }
+                });
+                
+                // Кнопка отмены
+                document.getElementById('undo-btn').addEventListener('click', () => this.undo());
+                
+                // Кнопка возврата
+                document.getElementById('redo-btn').addEventListener('click', () => this.redo());
+                
+                // Кнопка сохранения
+                document.getElementById('save-btn').addEventListener('click', () => this.saveDrawing());
+            }
+            
+            showEraserPreview(e) {
+                if (this.currentTool !== 'eraser') return;
+                
+                const preview = document.getElementById('eraser-preview');
+                const rect = this.drawingCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                preview.style.left = (rect.left + x - this.brushSize) + 'px';
+                preview.style.top = (rect.top + y - this.brushSize) + 'px';
+                preview.style.width = this.brushSize * 2 + 'px';
+                preview.style.height = this.brushSize * 2 + 'px';
+                preview.style.display = 'block';
+            }
+            
+            hideEraserPreview() {
+                const preview = document.getElementById('eraser-preview');
+                preview.style.display = 'none';
+            }
+            
+            updateEraserPreview() {
+                const preview = document.getElementById('eraser-preview');
+                if (this.currentTool === 'eraser') {
+                    preview.style.width = this.brushSize * 2 + 'px';
+                    preview.style.height = this.brushSize * 2 + 'px';
+                }
+            }
+            
+            // === МЕТОДЫ РИСОВАНИЯ ===
+            startDrawing(e) {
+                const rect = this.drawingCanvas.getBoundingClientRect();
+                this.startX = this.lastX = e.clientX - rect.left;
+                this.startY = this.lastY = e.clientY - rect.top;
+                
+                if (['pencil', 'eraser'].includes(this.currentTool)) {
+                    this.isDrawing = true;
+                    this.isDrawingShape = false;
+                    this.saveState();
+                } else if (['line', 'rectangle', 'circle'].includes(this.currentTool)) {
+                    this.isDrawingShape = true;
+                    this.shapeStartX = this.startX;
+                    this.shapeStartY = this.startY;
+                    this.tempShape = { type: this.currentTool };
+                }
+                
+                this.draw(e);
+            }
+            
+            draw(e) {
+                const rect = this.drawingCanvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                if (x < 0 || x > this.drawingCanvas.width || y < 0 || y > this.drawingCanvas.height) {
+                    return;
+                }
+                
+                if (this.isDrawing) {
+                    switch(this.currentTool) {
+                        case 'pencil':
+                            this.drawPencil(x, y);
+                            break;
+                        case 'eraser':
+                            this.eraseDrawing(x, y);
+                            break;
+                    }
+                } else if (this.isDrawingShape) {
+                    this.drawTempShape(x, y);
+                }
+                
+                this.lastX = x;
+                this.lastY = y;
+            }
+            
+            drawPencil(x, y) {
+                this.drawingCtx.beginPath();
+                this.drawingCtx.moveTo(this.lastX, this.lastY);
+                this.drawingCtx.lineTo(x, y);
+                this.drawingCtx.lineWidth = this.brushSize;
+                this.drawingCtx.lineCap = 'round';
+                this.drawingCtx.lineJoin = 'round';
+                this.drawingCtx.strokeStyle = this.currentColor;
+                this.drawingCtx.stroke();
+            }
+            
+            eraseDrawing(x, y) {
+                this.drawingCtx.save();
+                this.drawingCtx.globalCompositeOperation = 'destination-out';
+                this.drawingCtx.beginPath();
+                this.drawingCtx.arc(x, y, this.brushSize, 0, Math.PI * 2);
+                this.drawingCtx.fill();
+                this.drawingCtx.restore();
+            }
+            
+            drawTempShape(x, y) {
+                // Очищаем временный канвас
+                this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
+                
+                // Рисуем временную фигуру
+                this.tempCtx.lineWidth = this.brushSize;
+                this.tempCtx.strokeStyle = this.currentColor;
+                this.tempCtx.setLineDash([5, 5]);
+                this.tempCtx.fillStyle = this.currentColor.replace(')', ', 0.3)').replace('rgb', 'rgba');
+                
+                switch(this.currentTool) {
+                    case 'line':
+                        this.tempCtx.beginPath();
+                        this.tempCtx.moveTo(this.shapeStartX, this.shapeStartY);
+                        this.tempCtx.lineTo(x, y);
+                        this.tempCtx.stroke();
+                        break;
+                        
+                    case 'rectangle':
+                        const rectWidth = x - this.shapeStartX;
+                        const rectHeight = y - this.shapeStartY;
+                        this.tempCtx.strokeRect(this.shapeStartX, this.shapeStartY, rectWidth, rectHeight);
+                        this.tempCtx.fillRect(this.shapeStartX, this.shapeStartY, rectWidth, rectHeight);
+                        break;
+                        
+                    case 'circle':
+                        const radius = Math.sqrt(
+                            Math.pow(x - this.shapeStartX, 2) + 
+                            Math.pow(y - this.shapeStartY, 2)
+                        );
+                        this.tempCtx.beginPath();
+                        this.tempCtx.arc(this.shapeStartX, this.shapeStartY, radius, 0, Math.PI * 2);
+                        this.tempCtx.stroke();
+                        this.tempCtx.fill();
+                        break;
+                }
+                
+                this.tempCtx.setLineDash([]);
+            }
+            
+            stopDrawing() {
+                if (this.isDrawing) {
+                    this.isDrawing = false;
+                } else if (this.isDrawingShape) {
+                    this.saveState();
+                    this.drawingCtx.drawImage(this.tempCanvas, 0, 0);
+                    this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
+                    this.saveState();
+                    this.isDrawingShape = false;
+                }
+            }
+            
+            saveDrawing() {
+                try {
+                    const finalCanvas = document.createElement('canvas');
+                    finalCanvas.width = this.mapCanvas.width;
+                    finalCanvas.height = this.mapCanvas.height;
+                    const finalCtx = finalCanvas.getContext('2d');
+                    
+                    // Карта
+                    finalCtx.drawImage(this.mapCanvas, 0, 0);
+                    // Рисунки поверх
+                    finalCtx.drawImage(this.drawingCanvas, 0, 0);
+                    
+                    const link = document.createElement('a');
+                    const date = new Date().toLocaleDateString('ru-RU').replace(/\./g, '-');
+                    const filename = `карта-${this.config.name}-${date}.png`;
+                    link.download = filename;
+                    link.href = finalCanvas.toDataURL('image/png');
+                    link.click();
+                    
+                    this.updateStatus(`Сохранено: ${filename}`);
+                    
+                } catch (error) {
+                    console.error('Ошибка сохранения:', error);
+                    this.updateStatus('Ошибка сохранения');
+                }
+            }
+        }
+        
+        // === ЗАПУСК РЕДАКТОРА ===
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                window.editor = new SimpleMapEditor(MAP_CONFIG);
+            } catch (error) {
+                console.error('Ошибка запуска:', error);
+                alert('Ошибка загрузки редактора: ' + error.message);
+            }
+        });
+        
+        // Ресайз окна
+        window.addEventListener('resize', () => {
+            if (window.editor) {
+                editor.setCanvasSize();
+                editor.drawMap();
+            }
+        });
+    </script>
+</body>
+</html>

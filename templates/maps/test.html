@@ -1,0 +1,27 @@
+<!-- templates/maps/test.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Тест</title>
+</head>
+<body>
+    <h1>Тестовая страница</h1>
+    <p>Карта: {{ map.name }}</p>
+    <p>Изображение: {{ map.image.url }}</p>
+    <img src="{{ map.image.url }}" alt="{{ map.name }}" style="max-width: 300px;">
+    
+    <div id="test-map" style="width: 500px; height: 500px; border: 1px solid red;"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Простой тест Leaflet
+        const map = L.map('test-map').setView([51.505, -0.09], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+        L.marker([51.5, -0.09]).addTo(map).bindPopup('Тест');
+        
+        console.log('Leaflet работает!');
+    </script>
+</body>
+</html>
