@@ -3,44 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Список карт</title>
+    <title>Список карт | MapEditor</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
             background-color: #121212;
             color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .navbar {
-            background-color: #1a1a1a !important;
-            border-bottom: 1px solid #333;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            border-bottom: 2px solid #0a58ca;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         
         .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: #fff !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .nav-link {
             color: #e0e0e0 !important;
+            font-weight: 500;
+            transition: all 0.3s;
+            margin: 0 5px;
+            border-radius: 8px;
+            padding: 10px 15px !important;
+        }
+        
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #0a58ca 0%, #3d8bfd 100%);
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(10, 88, 202, 0.3);
         }
         
         .container {
-            background-color: #1a1a1a;
-            border-radius: 8px;
+            max-width: 1400px;
             padding: 20px;
-            margin-top: 20px;
         }
         
-        h2 {
-            color: #e0e0e0;
-        }
-        
+        /* Стили для карточек карт */
         .card {
-            background-color: #2d2d2d;
-            border: 1px solid #444;
-            transition: transform 0.3s, box-shadow 0.3s;
-            border-radius: 10px;
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             overflow: hidden;
         }
-        
         
         .card-img-top {
             height: 200px;
@@ -247,12 +261,10 @@
             color: #e57373 !important;
         }
         
-        /* Улучшаем видимость ссылок в карточках */
         .card a {
             text-decoration: none;
         }
         
-        /* Адаптация для маленьких экранов */
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -277,12 +289,45 @@
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/">🗺️ Редактор карт WoT</a>
+    <!-- ТОЧНО ТАКАЯ ЖЕ ШАПКА КАК В КЛАНОВОМ РАЗДЕЛЕ -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-map"></i> MapEditor
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="fas fa-draw-polygon"></i> Редактор карт
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/clan/">
+                            <i class="fas fa-users"></i> Клан
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/clan/rankings/">
+                            <i class="fas fa-trophy"></i> Рейтинг
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/clan/sessions/">
+                            <i class="fas fa-sword"></i> Битвы
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
-    
+
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
     <div class="container mt-4">
         <!-- Заголовок и кнопка добавления -->
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -295,10 +340,8 @@
         <!-- Панель поиска и фильтров -->
         <div class="card mb-4">
             <div class="card-body">
-                <!-- Только поле поиска (без выпадающего списка) -->
                 <form method="get" class="search-form">
                     <div class="row g-3">
-                        <!-- Поиск по названию -->
                         <div class="col-md-12">
                             <div class="input-group">
                                 <span class="input-group-text"><i class="fas fa-search"></i></span>
@@ -319,7 +362,6 @@
                     </div>
                 </form>
                 
-                <!-- Только быстрые фильтры по режимам (без "Другого") -->
                 <div class="filter-section">
                     <div class="filter-title">
                         <i class="fas fa-filter"></i> Фильтр по режимам:
@@ -330,7 +372,7 @@
                             Все режимы
                         </a>
                         {% for value, label in mode_choices %}
-                            {% if value != 'other' %}  <!-- Исключаем "Другой" -->
+                            {% if value != 'other' %}
                             <a href="?{% if search_query %}search={{ search_query }}&{% endif %}mode={{ value }}" 
                                class="btn filter-btn {% if mode_filter == value %}active-filter{% endif %}">
                                 {{ label }}
@@ -340,7 +382,6 @@
                     </div>
                 </div>
                 
-                <!-- Информация о фильтрах -->
                 {% if search_query or mode_filter %}
                 <div class="filter-info">
                     <small>
@@ -372,7 +413,7 @@
                     <div class="card-body">
                         <h5 class="card-title d-flex justify-content-between align-items-start">
                             {{ map.name }}
-                            {% if map.mode != 'other' %}  <!-- Не показываем бейдж для "Другого" -->
+                            {% if map.mode != 'other' %}
                             <span class="mode-badge mode-{{ map.mode }}">
                                 {{ map.get_mode_display_name }}
                             </span>
@@ -403,7 +444,6 @@
             {% endfor %}
         </div>
         {% else %}
-        <!-- Сообщение если нет карт -->
         <div class="alert alert-info">
             <h4><i class="fas fa-info-circle"></i> Нет доступных карт</h4>
             <p>Добавьте карту через <a href="/admin/maps/gamemap/add/">админ-панель</a>.</p>
@@ -423,5 +463,7 @@
         {% endif %}
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </body>
 </html>

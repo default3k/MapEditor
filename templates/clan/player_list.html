@@ -1,0 +1,248 @@
+{% extends 'clan/base_clan.html' %}
+{% load static %}
+
+{% block title %}Состав клана{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title">
+        <i class="fas fa-users me-3"></i>{{ clan_name }}
+    </h1>
+    <div>
+        <a href="{% url 'clan:session_add' %}" class="btn btn-clan me-2">
+            <i class="fas fa-sword"></i> Записать битву
+        </a>
+        <a href="{% url 'clan:player_add' %}" class="btn btn-clan">
+            <i class="fas fa-user-plus"></i> Добавить игрока
+        </a>
+    </div>
+</div>
+
+<!-- Статистика клана -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_players }}</div>
+            <div class="stat-label">Игроков в клане</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_battles }}</div>
+            <div class="stat-label">Всего битв</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="stat-value">{{ avg_clan_damage }}</div>
+            <div class="stat-label">Средний урон клана</div>
+        </div>
+    </div>
+</div>
+
+<!-- Поиск -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark text-light border-secondary">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" 
+                           name="search" 
+                           class="form-control" 
+                           placeholder="Поиск по нику или Discord..." 
+                           value="{{ search_query }}">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-clan w-100">
+                    <i class="fas fa-filter"></i> Найти
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Таблица игроков -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list me-2"></i>Рейтинг клана</span>
+        <span class="badge bg-secondary">{{ players.count }} игроков</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Позиция</th>
+                    <th>Игрок</th>
+                    <th>Discord</th>
+                    <th>Средний урон</th>
+                    <th>Битвы</th>
+                    <th>Винрейт</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in players %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <div class="position-badge position-{% if player.position <= 3 %}{{ player.position }}{% else %}other{% endif %}">
+                            {% if player.position == 1 %}👑
+                            {% elif player.position == 2 %}🥈
+                            {% elif player.position == 3 %}🥉
+                            {% else %}{{ player.position }}
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <a href="{% url 'clan:player_detail' player.id %}" class="player-link">
+                            <strong>{{ player.nickname }}</strong>
+                            <span class="ms-2">{{ player.get_rank_emoji }}</span>
+                        </a>
+                    </td>
+                    <td>
+                        {% if player.discord_nick %}
+                            <i class="fab fa-discord me-1" style="color: #5865F2;"></i>
+                            {{ player.discord_nick }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="damage-cell">
+                        <strong>{{ player.average_damage }}</strong>
+                    </td>
+                    <td>{{ player.total_battles }}</td>
+                    <td>
+                        {% if player.win_rate > 0 %}
+                            <span class="winrate {% if player.win_rate >= 60 %}winrate-high{% elif player.win_rate >= 50 %}winrate-mid{% else %}winrate-low{% endif %}">
+                                {{ player.win_rate }}%
+                            </span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'clan:player_edit' player.id %}" class="btn-action btn-edit" title="Редактировать">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'clan:session_add' %}?player1={{ player.id }}" class="btn-action btn-battle" title="Записать битву">
+                                <i class="fas fa-crosshairs"></i>
+                            </a>
+                            <a href="{% url 'clan:player_delete' player.id %}" class="btn-action btn-delete" title="Удалить">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <i class="fas fa-users fa-4x mb-3" style="color: #444;"></i>
+                        <h5>В клане пока нет игроков</h5>
+                        <p class="text-muted">Добавьте первого игрока</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+/* Позиции */
+.position-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+.position-1 { background: linear-gradient(135deg, #ffd700, #ffa500); color: #000; }
+.position-2 { background: linear-gradient(135deg, #c0c0c0, #a0a0a0); color: #000; }
+.position-3 { background: linear-gradient(135deg, #cd7f32, #b87333); color: #fff; }
+.position-other { background: #333; color: #fff; }
+
+/* Ссылки */
+.player-link {
+    color: #e0e0e0 !important;
+    text-decoration: none !important;
+    transition: none !important;
+}
+.player-link:hover {
+    color: #e0e0e0 !important;
+    opacity: 1 !important;
+}
+
+/* Прогресс-бар урона - исправленный */
+.damage-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 140px;
+}
+.damage-value {
+    font-weight: 600;
+    min-width: 60px;
+}
+.damage-bar {
+    flex: 1;
+    height: 8px;
+    background: #2d2d2d;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #444;
+}
+.damage-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0a58ca, #3d8bfd);
+    border-radius: 4px;
+    transition: width 0.3s;
+}
+
+/* Винрейт */
+.winrate {
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: #2d2d2d;
+    display: inline-block;
+}
+.winrate-high { color: #4caf50; }
+.winrate-mid { color: #ffa500; }
+.winrate-low { color: #f44336; }
+
+/* Кнопки */
+.action-buttons {
+    display: flex;
+    gap: 6px;
+}
+.btn-action {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    color: white;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+.btn-edit { background: #0a58ca; }
+.btn-battle { background: #28a745; }
+.btn-delete { background: #dc3545; }
+.btn-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    color: white;
+    text-decoration: none;
+}
+</style>
+{% endblock %}

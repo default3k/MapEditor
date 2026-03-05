@@ -1,0 +1,199 @@
+{% extends 'clan/base_clan.html' %}
+{% load static %}
+
+{% block title %}Редактирование битвы{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Подсветка победителя золотой рамкой
+    function highlightWinner() {
+        $('.player-card').removeClass('winner-gold');
+        
+        var winnerId = $('#id_winner').val();
+        if (winnerId) {
+            if ($('#id_player1').val() == winnerId) {
+                $('#player1-card').addClass('winner-gold');
+            } else if ($('#id_player2').val() == winnerId) {
+                $('#player2-card').addClass('winner-gold');
+            }
+        }
+    }
+
+    $('#id_winner').on('change', highlightWinner);
+    $('#id_player1, #id_player2').on('change', highlightWinner);
+    highlightWinner();
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-edit me-3"></i>Редактирование битвы
+        </h1>
+        <a href="{% url 'clan:session_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row">
+            <!-- Игрок 1 -->
+            <div class="col-md-6 mb-4">
+                <div class="player-card" id="player1-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2"></i>Игрок 1
+                            <span class="winner-star">👑</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Игрок</label>
+                            {{ form.player1 }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Танк</label>
+                            {{ form.tank1 }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Урон в бою</label>
+                            {{ form.player1_battle_damage }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Изменение среднего урона</label>
+                            {{ form.player1_damage_change }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Игрок 2 -->
+            <div class="col-md-6 mb-4">
+                <div class="player-card" id="player2-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2"></i>Игрок 2
+                            <span class="winner-star">👑</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Игрок</label>
+                            {{ form.player2 }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Танк</label>
+                            {{ form.tank2 }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Урон в бою</label>
+                            {{ form.player2_battle_damage }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Изменение среднего урона</label>
+                            {{ form.player2_damage_change }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Результат -->
+        <div class="card result-card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Результат</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Победитель</label>
+                        {{ form.winner }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Заметки</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-clan btn-lg">
+                <i class="fas fa-save me-2"></i>Сохранить изменения
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, #aaa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.player-card {
+    background: #1e1e1e;
+    border: 2px solid #333;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s;
+}
+.player-card .card-header {
+    background: linear-gradient(135deg, #252525 0%, #2d2d2d 100%);
+    border-bottom: 1px solid #444;
+    padding: 1rem;
+}
+.winner-star {
+    color: #666;
+    font-size: 1.2rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.winner-gold {
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+.winner-gold .winner-star {
+    opacity: 1;
+    color: #ffd700;
+}
+.result-card {
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 12px;
+}
+.form-control, .form-select {
+    background-color: #2d2d2d;
+    border: 1px solid #444;
+    color: #e0e0e0;
+    border-radius: 8px;
+    padding: 10px;
+}
+.form-control:focus, .form-select:focus {
+    background-color: #333;
+    border-color: #0a58ca;
+    color: #fff;
+}
+.btn-clan {
+    background: linear-gradient(135deg, #0a58ca 0%, #3d8bfd 100%);
+    border: none;
+    color: white;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+.btn-clan:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(10, 88, 202, 0.3);
+    color: white;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,323 @@
+{% extends 'clan/base_clan.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Подсветка победителя золотой рамкой
+    function highlightWinner() {
+        $('.player-card').removeClass('winner-gold');
+        
+        var winnerId = $('#id_winner').val();
+        if (winnerId) {
+            if ($('#id_player1').val() == winnerId) {
+                $('#player1-card').addClass('winner-gold');
+            } else if ($('#id_player2').val() == winnerId) {
+                $('#player2-card').addClass('winner-gold');
+            }
+        }
+    }
+
+    $('#id_winner').on('change', highlightWinner);
+    $('#id_player1, #id_player2').on('change', highlightWinner);
+    highlightWinner();
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-sword me-3"></i>{{ title }}
+        </h1>
+        <a href="{% url 'clan:session_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Назад
+        </a>
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="row">
+            <!-- Игрок 1 -->
+            <div class="col-md-6 mb-4">
+                <div class="player-card" id="player1-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2"></i>Игрок 1
+                            <span class="winner-star">👑</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Игрок</label>
+                            {{ form.player1 }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Танк</label>
+                            {{ form.tank1 }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Урон в бою</label>
+                            {{ form.player1_battle_damage }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Изменение среднего урона</label>
+                            {{ form.player1_damage_change }}
+                            <small class="form-text text-muted">Обновленный средний урон</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Игрок 2 -->
+            <div class="col-md-6 mb-4">
+                <div class="player-card" id="player2-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2"></i>Игрок 2
+                            <span class="winner-star">👑</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Игрок</label>
+                            {{ form.player2 }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Танк</label>
+                            {{ form.tank2 }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Урон в бою</label>
+                            {{ form.player2_battle_damage }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Изменение среднего урона</label>
+                            {{ form.player2_damage_change }}
+                            <small class="form-text text-muted">Обновленный средний урон</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Результат -->
+        <div class="card result-card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Результат</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Победитель</label>
+                        {{ form.winner }}
+                        <small class="form-text text-muted">Выберите победителя — карточка подсветится золотом</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Заметки</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {% for error in form.non_field_errors %}
+                {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-clan btn-lg">
+                <i class="fas fa-save me-2"></i>Записать бой
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+/* ===== ОСНОВНЫЕ СТИЛИ ===== */
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff, #aaa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+}
+
+/* ===== КАРТОЧКИ ИГРОКОВ ===== */
+.player-card {
+    background: #1e1e1e !important;
+    border: 2px solid #333 !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+    transition: all 0.3s;
+    height: 100%;
+}
+
+.player-card .card-header {
+    background: linear-gradient(135deg, #252525 0%, #2d2d2d 100%) !important;
+    border-bottom: 1px solid #444 !important;
+    padding: 1rem;
+}
+
+.player-card .card-header h5 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    color: #fff !important;
+}
+
+.winner-star {
+    color: #666;
+    font-size: 1.2rem;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+/* Золотая подсветка победителя */
+.winner-gold {
+    border: 3px solid #ffd700 !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3) !important;
+}
+
+.winner-gold .winner-star {
+    opacity: 1 !important;
+    color: #ffd700 !important;
+}
+
+/* ===== КАРТОЧКА РЕЗУЛЬТАТА ===== */
+.result-card {
+    background: #1e1e1e !important;
+    border: 1px solid #333 !important;
+    border-radius: 12px !important;
+}
+
+.result-card .card-header {
+    background: linear-gradient(135deg, #252525 0%, #2d2d2d 100%) !important;
+    border-bottom: 1px solid #444 !important;
+}
+
+/* ===== СТИЛИ ДЛЯ ФОРМ - САМОЕ ВАЖНОЕ ===== */
+/* Принудительно переопределяем все поля ввода */
+.form-control, 
+.form-select,
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+    background-color: #2d2d2d !important;
+    border: 2px solid #444 !important;
+    border-radius: 8px !important;
+    color: #e0e0e0 !important;
+    padding: 10px 15px !important;
+    width: 100% !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+
+.form-control:focus, 
+.form-select:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    background-color: #333 !important;
+    border-color: #0a58ca !important;
+    color: #fff !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(10, 88, 202, 0.2) !important;
+}
+
+/* Стили для label */
+.form-label {
+    color: #e0e0e0 !important;
+    font-weight: 500 !important;
+    margin-bottom: 5px !important;
+    display: block !important;
+}
+
+/* Стили для подсказок */
+.form-text {
+    color: #888 !important;
+    font-size: 0.85rem !important;
+    margin-top: 5px !important;
+    display: block !important;
+}
+
+/* ===== КНОПКИ ===== */
+.btn-outline-secondary {
+    background: transparent !important;
+    border: 2px solid #444 !important;
+    color: #e0e0e0 !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+    transition: all 0.2s !important;
+}
+
+.btn-outline-secondary:hover {
+    background: #333 !important;
+    border-color: #555 !important;
+    color: #fff !important;
+    transform: translateY(-2px) !important;
+}
+
+.btn-clan {
+    background: linear-gradient(135deg, #0a58ca 0%, #3d8bfd 100%) !important;
+    border: none !important;
+    color: white !important;
+    padding: 12px 30px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s !important;
+}
+
+.btn-clan:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 5px 15px rgba(10, 88, 202, 0.3) !important;
+    color: white !important;
+}
+
+/* ===== АВТОЗАПОЛНЕНИЕ ===== */
+/* Жестко фиксим белый фон */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+    -webkit-text-fill-color: #e0e0e0 !important;
+    -webkit-box-shadow: 0 0 0px 1000px #2d2d2d inset !important;
+    background-color: #2d2d2d !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+}
+
+/* ===== АЛЕРТ ===== */
+.alert-danger {
+    background: #2d1a1a !important;
+    border: 1px solid #dc3545 !important;
+    color: #ff8a8a !important;
+    border-radius: 8px !important;
+    padding: 15px 20px !important;
+}
+</style>
+{% endblock %}

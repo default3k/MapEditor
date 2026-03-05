@@ -1,0 +1,196 @@
+{% extends 'clan/base_clan.html' %}
+{% load static %}
+
+{% block title %}Рейтинг клана{% endblock %}
+
+{% block content %}
+<h1 class="page-title">
+    <i class="fas fa-trophy me-3"></i>Рейтинг клана
+</h1>
+
+<!-- Топ 3 -->
+{% if top3 %}
+<div class="row mb-5">
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            <div class="position-badge position-2 mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.8rem;">
+                🥈
+            </div>
+            <h4>{{ top3.1.nickname }}</h4>
+            <p class="text-muted">{{ top3.1.average_damage }} урона</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card text-center" style="border-color: #ffd700;">
+            <div class="position-badge position-1 mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2.5rem;">
+                👑
+            </div>
+            <h3>{{ top3.0.nickname }}</h3>
+            <p class="text-muted">{{ top3.0.average_damage }} урона</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card text-center">
+            <div class="position-badge position-3 mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.8rem;">
+                🥉
+            </div>
+            <h4>{{ top3.2.nickname }}</h4>
+            <p class="text-muted">{{ top3.2.average_damage }} урона</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Полный рейтинг -->
+<div class="card">
+    <div class="card-header">
+        <span><i class="fas fa-list-ol me-2"></i>Полная таблица рейтинга</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Позиция</th>
+                    <th>Игрок</th>
+                    <th>Средний урон</th>
+                    <th>Битвы</th>
+                    <th>Победы</th>
+                    <th>Винрейт</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in players %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        {% if player.position == 1 %}
+                            <span class="badge bg-warning text-dark fs-6">🥇 1</span>
+                        {% elif player.position == 2 %}
+                            <span class="badge bg-secondary fs-6">🥈 2</span>
+                        {% elif player.position == 3 %}
+                            <span class="badge bg-danger fs-6">🥉 3</span>
+                        {% else %}
+                            <span class="badge bg-dark fs-6">{{ player.position }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'clan:player_detail' player.id %}" class="player-link">
+                            <strong>{{ player.nickname }}</strong>
+                        </a>
+                    </td>
+                    <td class="damage-cell">{{ player.average_damage }}</td>
+                    <td>{{ player.total_battles }}</td>
+                    <td class="wins-cell">{{ player.wins }}</td>
+                    <td>
+                        <span class="winrate-badge {% if player.win_rate >= 60 %}winrate-high{% elif player.win_rate >= 50 %}winrate-mid{% else %}winrate-low{% endif %}">
+                            {{ player.win_rate }}%
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+/* Ссылки */
+.player-link {
+    color: #e0e0e0;
+    text-decoration: none;
+    transition: none;
+}
+.player-link:hover {
+    color: #0a58ca;
+    text-decoration: underline;
+}
+
+/* Ячейки */
+.damage-cell {
+    font-weight: 600;
+    color: #ffd700;
+}
+
+.wins-cell {
+    color: #4caf50;
+    font-weight: 500;
+}
+
+/* Бейдж винрейта */
+.winrate-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: #2d2d2d;
+    border: 1px solid #444;
+}
+
+.winrate-high { 
+    color: #4caf50; 
+    border-color: #4caf50;
+}
+.winrate-mid { 
+    color: #ffa500; 
+    border-color: #ffa500;
+}
+.winrate-low { 
+    color: #f44336; 
+    border-color: #f44336;
+}
+
+/* Бейдж позиции */
+.badge {
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+/* Статистика топ-3 */
+.stat-card {
+    background: linear-gradient(135deg, #252525 0%, #1e1e1e 100%);
+    border: 2px solid #333;
+    border-radius: 16px;
+    padding: 25px 15px;
+    transition: all 0.3s;
+}
+.stat-card:hover {
+    transform: translateY(-5px);
+    border-color: #0a58ca;
+}
+
+.position-badge {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.8rem;
+    margin: 0 auto 15px;
+}
+.position-1 { 
+    background: linear-gradient(135deg, #ffd700, #ffa500); 
+    color: #000; 
+    box-shadow: 0 0 20px rgba(255,215,0,0.3);
+}
+.position-2 { 
+    background: linear-gradient(135deg, #c0c0c0, #a0a0a0); 
+    color: #000;
+    box-shadow: 0 0 20px rgba(192,192,192,0.3);
+}
+.position-3 { 
+    background: linear-gradient(135deg, #cd7f32, #b87333); 
+    color: #fff;
+    box-shadow: 0 0 20px rgba(205,127,50,0.3);
+}
+
+/* Убираем старые стили прогрессбара */
+.progress {
+    display: none;
+}
+</style>
+{% endblock %}

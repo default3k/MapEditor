@@ -1,0 +1,27 @@
+{% extends 'clan/base_clan.html' %}
+
+{% block content %}
+<div class="container mt-5" style="max-width: 500px;">
+    <div class="card border-danger">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Удаление игрока</h4>
+        </div>
+        <div class="card-body">
+            <p class="fs-5">Вы уверены, что хотите удалить игрока</p>
+            <p class="text-center fs-3 fw-bold">{{ player.nickname }}</p>
+            <p class="text-muted text-center">Это действие нельзя отменить</p>
+
+            <form method="post" class="d-flex justify-content-center gap-3 mt-4">
+                {% csrf_token %}
+                <a href="{% url 'clan:player_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Отмена
+                </a>
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

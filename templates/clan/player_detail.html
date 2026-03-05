@@ -1,0 +1,151 @@
+{% extends 'clan/base_clan.html' %}
+{% load static %}
+
+{% block title %}{{ player.nickname }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'clan:player_list' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+</div>
+
+<div class="row">
+    <!-- Левая колонка - инфо -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    {{ player.get_rank_emoji }} {{ player.nickname }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr><td>Позиция:</td><td><strong>#{{ player.position }}</strong></td></tr>
+                    <tr>
+                        <td>Discord:</td>
+                        <td>
+                            {% if player.discord_nick %}
+                                <i class="fab fa-discord" style="color:#5865F2;"></i> {{ player.discord_nick }}
+                            {% else %}<span class="text-muted">—</span>{% endif %}
+                        </td>
+                    </tr>
+                    <tr><td>Средний урон:</td><td><strong>{{ player.average_damage }}</strong></td></tr>
+                    <tr><td>Всего битв:</td><td>{{ player.total_battles }}</td></tr>
+                    <tr><td>Побед/Поражений:</td><td>{{ player.wins }} / {{ player.losses }}</td></tr>
+                    <tr><td>Винрейт:</td><td>{{ player.win_rate }}%</td></tr>
+                </table>
+
+                {% if player.commander_notes %}
+                <div class="mt-3 p-3 bg-dark rounded">
+                    <strong>Заметки:</strong>
+                    <p class="mb-0 mt-2">{{ player.commander_notes }}</p>
+                </div>
+                {% endif %}
+
+                <div class="mt-3 d-flex gap-2">
+                    <a href="{% url 'clan:player_edit' player.id %}" class="btn btn-clan flex-grow-1">
+                        <i class="fas fa-edit"></i> Ред.
+                    </a>
+                    <a href="{% url 'clan:player_delete' player.id %}" class="btn btn-danger flex-grow-1">
+                        <i class="fas fa-trash"></i> Уд.
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Правая колонка - история -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">История битв</h5>
+                <span class="badge bg-secondary">{{ sessions.count }} сессий</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Соперник</th>
+                                <th>Танк</th>
+                                <th>Урон</th>
+                                <th>Результат</th>
+                                <th>Изменение урона</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in sessions %}
+                            <tr>
+                                <td>{{ session.session_date|date:"d.m.Y" }}</td>
+                                <td>
+                                    {% if session.player1 == player %}
+                                        <a href="{% url 'clan:player_detail' session.player2.id %}" class="player-link">
+                                            {{ session.player2.nickname }}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'clan:player_detail' session.player1.id %}" class="player-link">
+                                            {{ session.player1.nickname }}
+                                        </a>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if session.player1 == player %}
+                                        {{ session.tank1 }}
+                                    {% else %}
+                                        {{ session.tank2 }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if session.player1 == player %}
+                                        {{ session.player1_battle_damage }}
+                                    {% else %}
+                                        {{ session.player2_battle_damage }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if session.winner == player %}
+                                        <span class="badge bg-success">Победа</span>
+                                    {% elif session.winner %}
+                                        <span class="badge bg-danger">Поражение</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">—</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if session.player1 == player and session.player1_damage_change != 0 %}
+                                        <span class="{% if session.player1_damage_change > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if session.player1_damage_change > 0 %}+{% endif %}{{ session.player1_damage_change }}
+                                        </span>
+                                    {% elif session.player2 == player and session.player2_damage_change != 0 %}
+                                        <span class="{% if session.player2_damage_change > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if session.player2_damage_change > 0 %}+{% endif %}{{ session.player2_damage_change }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center py-4">Нет записей</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.player-link {
+    color: #0a58ca !important;
+    text-decoration: none !important;
+}
+.player-link:hover {
+    color: #3d8bfd !important;
+    text-decoration: underline !important;
+}
+</style>
+{% endblock %}
